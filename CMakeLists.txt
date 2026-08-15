@@ -9,20 +9,24 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(ExternalProject)
 
-set(SODIUM_SOURCE_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/external/libsodium")
-set(SODIUM_INSTALL_DIR "${CMAKE_BINARY_DIR}/sodium-install")
+set(SODIUM_SOURCE_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/external/libsodium" CACHE PATH "libsodium source dir")
+if(NOT DEFINED SODIUM_INSTALL_DIR)
+    set(SODIUM_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/sodium-install" CACHE PATH "libsodium install dir")
+endif()
 
 if(NOT EXISTS "${SODIUM_SOURCE_DIR}/configure")
     message(FATAL_ERROR
         "\nlibsodium submodule not found or not on stable branch.\n"
         "Run: git submodule update --init --recursive\n")
+else()
+    set(SODIUM_EXTERNAL_ARGS SOURCE_DIR "${SODIUM_SOURCE_DIR}")
 endif()
 
 file(MAKE_DIRECTORY "${SODIUM_INSTALL_DIR}/include")
 file(MAKE_DIRECTORY "${SODIUM_INSTALL_DIR}/lib")
 
 ExternalProject_Add(sodium_build
-    SOURCE_DIR        "${SODIUM_SOURCE_DIR}"
+    ${SODIUM_EXTERNAL_ARGS}
     BUILD_IN_SOURCE   1
     CONFIGURE_COMMAND <SOURCE_DIR>/configure
                       --prefix=<INSTALL_DIR>
@@ -56,6 +60,7 @@ target_include_directories(machikado
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes
 )
 target_link_libraries(machikado PUBLIC sodium_static)
+add_dependencies(machikado sodium_build)
 
 add_library(machikado_check OBJECT
     src/key.cpp
@@ -66,6 +71,7 @@ target_include_directories(machikado_check
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/includes
 )
 target_link_libraries(machikado_check PRIVATE sodium_static)
+add_dependencies(machikado_check sodium_build)
 target_compile_options(machikado_check PRIVATE
     -fsyntax-only -Wall -Wextra -Wpedantic -Wno-unused-parameter
 )
@@ -80,4 +86,5 @@ option(MACHIKADO_BUILD_EXAMPLES "Build examples" OFF)
 if(MACHIKADO_BUILD_EXAMPLES AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/main.cpp")
     add_executable(machikado_example examples/main.cpp)
     target_link_libraries(machikado_example PRIVATE machikado)
+    add_dependencies(machikado_example sodium_build)
 endif()
