@@ -23,6 +23,7 @@ namespace machikado {
         VerificationFailed,
         InvalidModuleId,
         PublicKeyMismatch,
+        SodiumInitFailed,
     };
 
     const char* to_string(SignError err);

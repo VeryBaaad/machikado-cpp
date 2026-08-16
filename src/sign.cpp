@@ -11,6 +11,7 @@ namespace machikado {
             case SignError::VerificationFailed:  return "signature verification failed";
             case SignError::InvalidModuleId:     return "invalid module id: must match ^[a-zA-Z][a-zA-Z0-9._-]+$";
             case SignError::PublicKeyMismatch:   return "public key mismatch";
+            case SignError::SodiumInitFailed:    return "libsodium sodium init failed";
         }
         return "unknown error";
     }
@@ -150,7 +151,7 @@ namespace machikado {
         const std::string& module_id,
         const PublicKey& expected_org_pk) {
         if (sodium_init() < 0) {
-            return {false, SignError::VerificationFailed};
+            return {false, SignError::SodiumInitFailed};
         }
 
         auto machikado_opt = SignedBlob::from_bytes(machikado_blob);
@@ -203,7 +204,7 @@ namespace machikado {
                     const std::vector<FileEntry>& entries,
                     const PublicKey& expected_pk) {
         if (sodium_init() < 0) {
-            return {false, SignError::VerificationFailed};
+            return {false, SignError::SodiumInitFailed};
         }
 
         auto machikado_opt = SignedBlob::from_bytes(machikado_blob);
