@@ -3,9 +3,9 @@
 
 namespace machikado {
 
-Ed25519KeyPair generate_keypair() {
+std::optional<Ed25519KeyPair> generate_keypair() {
     if (sodium_init() < 0) {
-        throw std::runtime_error("Failed to initialize libsodium");
+        return std::nullopt;
     }
 
     Ed25519KeyPair kp;
@@ -17,7 +17,7 @@ Ed25519KeyPair generate_keypair() {
             kp.public_key.data(),
             kp.private_key.data(),
             seed.data()) != 0) {
-        throw std::runtime_error("Failed to generate Ed25519 keypair");
+        return std::nullopt;
     }
 
     return kp;

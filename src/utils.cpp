@@ -50,7 +50,7 @@ namespace machikado {
         return s;
     }
 
-    std::vector<FileEntry> load_folder_files(
+    std::optional<std::vector<FileEntry>> load_folder_files(
         const fs::path& folder,
         const std::vector<std::string>& ignore_prefixes,
         const std::vector<std::string>& ignore_names,
@@ -72,9 +72,7 @@ namespace machikado {
 
                 std::ifstream file(full_source, std::ios::binary);
                 if (!file.is_open()) {
-                    throw std::runtime_error(
-                        "failed to read mapped source '" + source_path +
-                        "' (-> target '" + target_path + "')");
+                    return std::nullopt;
                 }
 
                 std::vector<std::uint8_t> content(
@@ -86,8 +84,7 @@ namespace machikado {
         }
 
         if (!fs::exists(folder) || !fs::is_directory(folder)) {
-            throw std::runtime_error(
-                "folder does not exist or is not a directory: " + folder.string());
+            return std::nullopt;
         }
 
         for (auto it = fs::recursive_directory_iterator(
@@ -125,7 +122,7 @@ namespace machikado {
 
             std::ifstream file(it->path(), std::ios::binary);
             if (!file.is_open()) {
-                throw std::runtime_error("failed to read file: " + it->path().string());
+                return std::nullopt;
             }
 
             std::vector<std::uint8_t> content(

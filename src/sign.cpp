@@ -4,9 +4,6 @@
 #include <cstring>
 
 namespace machikado {
-    SignException::SignException(SignError err)
-        : std::runtime_error(to_string(err)), error_(err) {}
-
     const char* to_string(SignError err) {
         switch (err) {
             case SignError::InvalidPrivateKey:   return "invalid private key bytes";
@@ -22,9 +19,9 @@ namespace machikado {
                         const PublicKey& pk)
         : signature_(sig), public_key_(pk) {}
 
-    SignedBlob SignedBlob::from_bytes(const std::uint8_t* data, std::size_t len) {
+    std::optional<SignedBlob> SignedBlob::from_bytes(const std::uint8_t* data, std::size_t len) {
         if (len != SIGNED_BLOB_SIZE) {
-            throw SignException(SignError::InvalidBlob);
+            return std::nullopt;
         }
         SignedBlob blob;
         std::memcpy(blob.signature_.data(), data, SIGNATURE_SIZE);
@@ -32,7 +29,7 @@ namespace machikado {
         return blob;
     }
 
-    SignedBlob SignedBlob::from_bytes(const std::vector<std::uint8_t>& bytes) {
+    std::optional<SignedBlob> SignedBlob::from_bytes(const std::vector<std::uint8_t>& bytes) {
         return from_bytes(bytes.data(), bytes.size());
     }
 
@@ -79,25 +76,21 @@ namespace machikado {
     static std::vector<std::uint8_t> build_signing_data(const std::vector<FileEntry>& entries) {
         std::vector<std::uint8_t> data;
         for (const auto& entry : entries) {
-            // relative_path bytes
             data.insert(data.end(), entry.relative_path.begin(), entry.relative_path.end());
-            // 0x00 separator
             data.push_back(0x00);
-            // file_size as LE u64
             std::uint64_t size = static_cast<std::uint64_t>(entry.content.size());
             for (int i = 0; i < 8; i++) {
                 data.push_back(static_cast<std::uint8_t>((size >> (i * 8)) & 0xFF));
             }
-            // file content
             data.insert(data.end(), entry.content.begin(), entry.content.end());
         }
         return data;
     }
 
-    SignedBlob sign_file_entries(const std::vector<FileEntry>& entries,
-                                const PrivateKey& private_key) {
+    std::optional<SignedBlob> sign_file_entries(const std::vector<FileEntry>& entries,
+                                                const PrivateKey& private_key) {
         if (sodium_init() < 0) {
-            throw std::runtime_error("Failed to initialize libsodium");
+            return std::nullopt;
         }
 
         PublicKey pk;
@@ -112,21 +105,21 @@ namespace machikado {
                 sig.data(), &sig_len,
                 signing_data.data(), signing_data.size(),
                 private_key.data()) != 0) {
-            throw SignException(SignError::InvalidPrivateKey);
+            return std::nullopt;
         }
 
         return SignedBlob(sig, pk);
     }
 
-    SignedBlob sign_mazoku(const std::string& module_id,
-                        const PublicKey& project_public_key,
-                        const PrivateKey& org_private_key) {
+    std::optional<SignedBlob> sign_mazoku(const std::string& module_id,
+                                        const PublicKey& project_public_key,
+                                        const PrivateKey& org_private_key) {
         if (!is_valid_module_id(module_id)) {
-            throw SignException(SignError::InvalidModuleId);
+            return std::nullopt;
         }
 
         if (sodium_init() < 0) {
-            throw std::runtime_error("Failed to initialize libsodium");
+            return std::nullopt;
         }
 
         PublicKey org_pk;
@@ -144,7 +137,7 @@ namespace machikado {
                 sig.data(), &sig_len,
                 data.data(), data.size(),
                 org_private_key.data()) != 0) {
-            throw SignException(SignError::InvalidPrivateKey);
+            return std::nullopt;
         }
 
         return SignedBlob(sig, org_pk);
@@ -160,19 +153,18 @@ namespace machikado {
             return {false, SignError::VerificationFailed};
         }
 
-        SignedBlob machikado;
-        try {
-            machikado = SignedBlob::from_bytes(machikado_blob);
-        } catch (const SignException& e) {
-            return {false, e.error()};
+        auto machikado_opt = SignedBlob::from_bytes(machikado_blob);
+        if (!machikado_opt) {
+            return {false, SignError::InvalidBlob};
         }
 
-        SignedBlob mazoku;
-        try {
-            mazoku = SignedBlob::from_bytes(mazoku_blob);
-        } catch (const SignException& e) {
-            return {false, e.error()};
+        auto mazoku_opt = SignedBlob::from_bytes(mazoku_blob);
+        if (!mazoku_opt) {
+            return {false, SignError::InvalidBlob};
         }
+
+        const auto& machikado = *machikado_opt;
+        const auto& mazoku = *mazoku_opt;
 
         if (mazoku.public_key() != expected_org_pk) {
             return {false, SignError::PublicKeyMismatch};
@@ -214,12 +206,12 @@ namespace machikado {
             return {false, SignError::VerificationFailed};
         }
 
-        SignedBlob machikado;
-        try {
-            machikado = SignedBlob::from_bytes(machikado_blob);
-        } catch (const SignException& e) {
-            return {false, e.error()};
+        auto machikado_opt = SignedBlob::from_bytes(machikado_blob);
+        if (!machikado_opt) {
+            return {false, SignError::InvalidBlob};
         }
+
+        const auto& machikado = *machikado_opt;
 
         if (machikado.public_key() != expected_pk) {
             return {false, SignError::PublicKeyMismatch};

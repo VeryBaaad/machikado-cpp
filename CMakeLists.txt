@@ -173,7 +173,7 @@ set(SODIUM_LIBRARY_MINIMAL_DEF "/* #undef SODIUM_LIBRARY_MINIMAL */")
 configure_file("${SODIUM_VERSION_H_TEMPLATE}" "${SODIUM_BINARY_DIR}/sodium/version.h" @ONLY)
 
 add_library(sodium STATIC ${SODIUM_SOURCES})
-
+target_compile_options(sodium PRIVATE -w)
 target_include_directories(sodium
     PUBLIC
         ${SODIUM_SOURCE_DIR}/src/libsodium/include

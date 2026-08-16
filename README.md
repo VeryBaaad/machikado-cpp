@@ -20,9 +20,10 @@ Supports machikado-only mode for single-keypair scenarios.
 ```cpp
 #include "machikado.h"
 #include <fstream>
+#include <iostream>
 
-auto org_kp = machikado::generate_keypair();
-auto member_kp = machikado::generate_keypair();
+auto org_kp = *machikado::generate_keypair();
+auto member_kp = *machikado::generate_keypair();
 
 std::ofstream("org_sk", std::ios::binary)
     .write(reinterpret_cast<const char*>(org_kp.private_key.data()), 64);
@@ -36,14 +37,14 @@ std::ofstream("member_sk", std::ios::binary)
 #include "machikado.h"
 
 std::string module_id = "my_module";
-auto entries = machikado::load_folder_files(
+auto entries = *machikado::load_folder_files(
     module_dir, {".git"}, {}, nullptr);
 
-auto machikado = machikado::sign_file_entries(entries, member_sk);
+auto machikado = *machikado::sign_file_entries(entries, member_sk);
 std::ofstream(module_dir / "machikado", std::ios::binary)
     .write(reinterpret_cast<const char*>(machikado.as_bytes().data()), 96);
 
-auto mazoku = machikado::sign_mazoku(module_id, member_kp.public_key, org_sk);
+auto mazoku = *machikado::sign_mazoku(module_id, member_kp.public_key, org_sk);
 std::ofstream(module_dir / "mazoku", std::ios::binary)
     .write(reinterpret_cast<const char*>(mazoku.as_bytes().data()), 96);
 ```
@@ -55,7 +56,7 @@ std::ofstream(module_dir / "mazoku", std::ios::binary)
 
 std::string module_id = "my_module";
 
-auto entries = machikado::load_folder_files(
+auto entries = *machikado::load_folder_files(
     dir, {}, {"machikado", "mazoku"}, nullptr);
 
 std::ifstream mf(dir / "machikado", std::ios::binary);
@@ -76,10 +77,10 @@ if (!ok) {}
 ```cpp
 #include "machikado.h"
 
-auto kp = machikado::generate_keypair();
-auto entries = machikado::load_folder_files(dir, {}, {"machikado"}, nullptr);
+auto kp = *machikado::generate_keypair();
+auto entries = *machikado::load_folder_files(dir, {}, {"machikado"}, nullptr);
 
-auto machikado = machikado::sign_file_entries(entries, kp.private_key);
+auto machikado = *machikado::sign_file_entries(entries, kp.private_key);
 
 auto [ok, err] = machikado::verify_machikado(
     machikado.to_vec(), entries, kp.public_key);
@@ -115,12 +116,12 @@ auto entries = machikado::load_folder_files(dir, {}, {}, &mapping);
 
 | Function | Returns |
 |----------|---------|
-| `generate_keypair()` | `Ed25519KeyPair` |
-| `sign_file_entries(entries, private_key)` | `SignedBlob (throws SignException)` |
-| `sign_mazoku(module_id, project_pk, org_sk)` | `SignedBlob (throws SignException)` |
+| `generate_keypair()` | `std::optional<Ed25519KeyPair>` |
+| `sign_file_entries(entries, private_key)` | `std::optional<SignedBlob>` |
+| `sign_mazoku(module_id, project_pk, org_sk)` | `std::optional<SignedBlob>` |
 | `verify(machikado_blob, mazoku_blob, entries, module_id, expected_org_pk)` | `pair<bool, optional<SignError>>` |
 | `verify_machikado(machikado_blob, entries, expected_pk)` | `pair<bool, optional<SignError>>` |
-| `load_folder_files(folder, ignore_prefixes, ignore_names, mapping)` | `vector<FileEntry> (throws on IO error)` |
+| `load_folder_files(folder, ignore_prefixes, ignore_names, mapping)` | `std::optional<std::vector<FileEntry>>` |
 
 `SignedBlob` is a 96-byte newtype with `.as_bytes()`, `.to_vec()`, `.signature()`, `.public_key()`.
 

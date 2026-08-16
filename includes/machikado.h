@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <map>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -26,14 +25,6 @@ namespace machikado {
         PublicKeyMismatch,
     };
 
-    class SignException : public std::runtime_error {
-    public:
-        explicit SignException(SignError err);
-        SignError error() const noexcept { return error_; }
-    private:
-        SignError error_;
-    };
-
     const char* to_string(SignError err);
 
     struct Ed25519KeyPair {
@@ -47,8 +38,8 @@ namespace machikado {
         SignedBlob(const std::array<std::uint8_t, SIGNATURE_SIZE>& sig,
                 const PublicKey& pk);
 
-        static SignedBlob from_bytes(const std::uint8_t* data, std::size_t len);
-        static SignedBlob from_bytes(const std::vector<std::uint8_t>& bytes);
+        static std::optional<SignedBlob> from_bytes(const std::uint8_t* data, std::size_t len);
+        static std::optional<SignedBlob> from_bytes(const std::vector<std::uint8_t>& bytes);
 
         const std::array<std::uint8_t, SIGNATURE_SIZE>& signature() const noexcept;
         const PublicKey& public_key() const noexcept;
@@ -96,14 +87,14 @@ namespace machikado {
         std::map<std::string, std::string> map_;
     };
 
-    Ed25519KeyPair generate_keypair();
+    std::optional<Ed25519KeyPair> generate_keypair();
 
-    SignedBlob sign_file_entries(const std::vector<FileEntry>& entries,
-                                const PrivateKey& private_key);
+    std::optional<SignedBlob> sign_file_entries(const std::vector<FileEntry>& entries,
+                                                const PrivateKey& private_key);
 
-    SignedBlob sign_mazoku(const std::string& module_id,
-                        const PublicKey& project_public_key,
-                        const PrivateKey& org_private_key);
+    std::optional<SignedBlob> sign_mazoku(const std::string& module_id,
+                                        const PublicKey& project_public_key,
+                                        const PrivateKey& org_private_key);
 
     std::pair<bool, std::optional<SignError>>
     verify(const std::vector<std::uint8_t>& machikado_blob,
@@ -117,7 +108,7 @@ namespace machikado {
                     const std::vector<FileEntry>& entries,
                     const PublicKey& expected_pk);
 
-    std::vector<FileEntry> load_folder_files(
+    std::optional<std::vector<FileEntry>> load_folder_files(
         const std::filesystem::path& folder,
         const std::vector<std::string>& ignore_prefixes = {},
         const std::vector<std::string>& ignore_names = {},
