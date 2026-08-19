@@ -102,8 +102,8 @@ auto mapping = machikado::FileMapping::from_pair(
 
 // Array of pairs
 auto mapping = machikado::FileMapping::from_pairs({
-    {"bin/zygiskd64", "bin/arm64-v8a/zygiskd"},
-    {"bin/zygiskd32", "bin/armeabi-v7a/zygiskd"},
+    {"bin/zygiskd64", std::optional<std::string>("bin/arm64-v8a/zygiskd")},
+    {"bin/zygiskd32", std::optional<std::string>("bin/armeabi-v7a/zygiskd")},
     {"module.prop", std::nullopt},
     {"action.sh", std::nullopt},
 });
