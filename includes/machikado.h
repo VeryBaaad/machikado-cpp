@@ -66,7 +66,7 @@ namespace machikado {
         FileMapping() = default;
 
         void insert(const std::string& target_path, std::optional<std::string> source_path);
- 
+
         std::size_t size() const noexcept;
         bool empty() const noexcept;
 
@@ -80,7 +80,7 @@ namespace machikado {
         const_iterator cend() const;
 
         const std::map<std::string, std::optional<std::string>>& map() const noexcept;
- 
+
         static FileMapping from_pair(const std::string& target, std::optional<std::string> source);
         static FileMapping from_pairs(std::initializer_list<std::pair<std::string, std::optional<std::string>>> pairs);
 
