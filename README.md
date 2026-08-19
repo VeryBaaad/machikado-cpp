@@ -91,25 +91,62 @@ if (!ok) {}
 
 Map source paths to signed paths — for when `customize.sh` moves files at install time.
 
+#### Load from all files
+
 ```cpp
 #include "machikado.h"
 
 // Single pair
 auto mapping = machikado::FileMapping::from_pair(
-    "bin/zygiskd64", "bin/arm64-v8a/zygiskd");
+    "bin/zygiskd64", std::optional<std::string>("bin/arm64-v8a/zygiskd"));
 
 // Array of pairs
 auto mapping = machikado::FileMapping::from_pairs({
-    {"bin/zygiskd64", "bin/arm64-v8a/zygiskd"},
-    {"bin/zygiskd32", "bin/armeabi-v7a/zygiskd"},
+    {"bin/zygiskd64", std::optional<std::string>("bin/arm64-v8a/zygiskd")},
+    {"bin/zygiskd32", std::optional<std::string>("bin/armeabi-v7a/zygiskd")},
+    {"module.prop", std::nullopt},
+    {"action.sh", std::nullopt},
 });
 
 // Iteration
-for (const auto& [target, source] : mapping) {
-    std::cout << target << " -> " << source << "\n";
+for (const auto& [target, source_opt] : mapping) {
+    if (source_opt) {
+        std::cout << target << " -> " << *source_opt << "\n";
+    } else {
+        std::cout << target << "\n";
+    }
 }
 
 auto entries = machikado::load_folder_files(dir, {}, {}, &mapping);
+```
+
+#### Load from file mapping
+
+```cpp
+#include "machikado.h"
+
+// Single pair
+auto mapping = machikado::FileMapping::from_pair(
+    "bin/zygiskd64", std::optional<std::string>("bin/arm64-v8a/zygiskd"));
+
+// Array of pairs
+auto mapping = machikado::FileMapping::from_pairs({
+    {"bin/zygiskd64", std::optional<std::string>("bin/arm64-v8a/zygiskd")},
+    {"bin/zygiskd32", std::optional<std::string>("bin/armeabi-v7a/zygiskd")},
+    {"module.prop", std::nullopt},
+    {"action.sh", std::nullopt},
+});
+
+// Iteration
+for (const auto& [target, source_opt] : mapping) {
+    if (source_opt) {
+        std::cout << target << " -> " << *source_opt << "\n";
+    } else {
+        std::cout << target << "\n";
+    }
+}
+
+auto entries = machikado::load_from_mapping(dir, mapping);
 ```
 
 ## API
@@ -122,6 +159,7 @@ auto entries = machikado::load_folder_files(dir, {}, {}, &mapping);
 | `verify(machikado_blob, mazoku_blob, entries, module_id, expected_org_pk)` | `pair<bool, optional<SignError>>` |
 | `verify_machikado(machikado_blob, entries, expected_pk)` | `pair<bool, optional<SignError>>` |
 | `load_folder_files(folder, ignore_prefixes, ignore_names, mapping)` | `std::optional<std::vector<FileEntry>>` |
+| `load_from_mapping(folder, mapping)` | `std::optional<std::vector<FileEntry>>` |
 
 `SignedBlob` is a 96-byte newtype with `.as_bytes()`, `.to_vec()`, `.signature()`, `.public_key()`.
 

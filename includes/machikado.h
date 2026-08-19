@@ -65,13 +65,13 @@ namespace machikado {
     public:
         FileMapping() = default;
 
-        void insert(const std::string& target_path, const std::string& source_path);
+        void insert(const std::string& target_path, std::optional<std::string> source_path);
 
         std::size_t size() const noexcept;
         bool empty() const noexcept;
 
-        using iterator = std::map<std::string, std::string>::iterator;
-        using const_iterator = std::map<std::string, std::string>::const_iterator;
+        using iterator = std::map<std::string, std::optional<std::string>>::iterator;
+        using const_iterator = std::map<std::string, std::optional<std::string>>::const_iterator;
         iterator begin();
         iterator end();
         const_iterator begin() const;
@@ -79,13 +79,13 @@ namespace machikado {
         const_iterator cbegin() const;
         const_iterator cend() const;
 
-        const std::map<std::string, std::string>& map() const noexcept;
+        const std::map<std::string, std::optional<std::string>>& map() const noexcept;
 
-        static FileMapping from_pair(const std::string& target, const std::string& source);
-        static FileMapping from_pairs(std::initializer_list<std::pair<std::string, std::string>> pairs);
+        static FileMapping from_pair(const std::string& target, std::optional<std::string> source);
+        static FileMapping from_pairs(std::initializer_list<std::pair<std::string, std::optional<std::string>>> pairs);
 
     private:
-        std::map<std::string, std::string> map_;
+        std::map<std::string, std::optional<std::string>> map_;
     };
 
     std::optional<Ed25519KeyPair> generate_keypair();
@@ -115,4 +115,7 @@ namespace machikado {
         const std::vector<std::string>& ignore_names = {},
         const FileMapping* mapping = nullptr);
 
+    std::optional<std::vector<FileEntry>> load_from_mapping(
+        const std::filesystem::path& folder,
+        const FileMapping& mapping);
 } // namespace machikado
