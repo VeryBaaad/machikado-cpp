@@ -71,7 +71,7 @@ namespace machikado {
 
             for (const auto& [target_path, source_path_opt] : mapping->map()) {
                 const std::string& source_path = source_path_opt.value_or(target_path);
-                fs::path full_source = folder / *source_path;
+                fs::path full_source = folder / source_path;
 
                 std::ifstream file(full_source, std::ios::binary);
                 if (!file.is_open()) {
